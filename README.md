@@ -1,4 +1,4 @@
-# Some implementations in Gurobi
+# Implementacoes Em Gurobi
 Algumas implementações de exercícios e um artigo realizadas utilizando a biblioteca Gurobipy.
 
 ## Questões e Artigo
