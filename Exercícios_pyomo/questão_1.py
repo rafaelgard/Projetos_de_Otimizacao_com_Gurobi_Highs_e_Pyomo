@@ -211,6 +211,29 @@ model.NG_utilizado = Var(range(5),
                 within = Binary, 
                 bounds=(0, None))
 
+
+model.QTD_transp_total = Var(within = NonNegativeIntegers, 
+                bounds=(0, None))
+
+
+# model.custo_de_treinamento + model.Distancia_percorrida_NP * 2 +
+#                     model.Distancia_percorrida_NG * 3 +
+#                     model.Custo_fixo_NP +
+#                     model.Custo_fixo_NG
+
+model.Distancia_percorrida_NP = Var(within = NonNegativeIntegers, 
+                bounds=(0, None))
+
+model.Distancia_percorrida_NG = Var(within = NonNegativeIntegers, 
+                bounds=(0, None))
+
+model.Custo_fixo_NP = Var(within = NonNegativeIntegers, 
+                bounds=(0, None))
+
+model.Custo_fixo_NG = Var(within = NonNegativeIntegers, 
+                bounds=(0, None))
+
+
 '''################## Define as restrições utilizadas no modelo ##################'''
 
 '''Define a variavel que identifica a quantidade treinada por base j'''
@@ -388,97 +411,190 @@ for k in range(0, 5):
 
 
 
-model.pprint()
-breakpoint()
+
 '''Identifica a quantidade transportada por base de cada navio pequeno'''
-modelo.addConstr((QTD_transp_por_base_NP[0] == gp.quicksum(
-    Rota_NP[i, j, k] * QTD_NP[i, j, k] for i in range(0, 4) for j in range(1, 2) for k in range(0, 7))))
+# modelo.addConstr((QTD_transp_por_base_NP[0] == gp.quicksum(
+#     Rota_NP[i, j, k] * QTD_NP[i, j, k] for i in range(0, 4) for j in range(1, 2) for k in range(0, 7))))
 
-modelo.addConstr((QTD_transp_por_base_NP[1] == gp.quicksum(
-    Rota_NP[i, j, k] * QTD_NP[i, j, k] for i in range(0, 4) for j in range(2, 3) for k in range(0, 7))))
+model.R3.add(expr=(model.QTD_transp_por_base_NP[0] == quicksum(
+    model.Rota_NP[i, j, k] * model.QTD_NP[i, j, k] for i in range(0, 4) for j in range(1, 2) for k in range(0, 7))))
 
-modelo.addConstr((QTD_transp_por_base_NP[2] == gp.quicksum(
-    Rota_NP[i, j, k] * QTD_NP[i, j, k] for i in range(0, 4) for j in range(3, 4) for k in range(0, 7))))
+
+# modelo.addConstr((QTD_transp_por_base_NP[1] == gp.quicksum(
+#     Rota_NP[i, j, k] * QTD_NP[i, j, k] for i in range(0, 4) for j in range(2, 3) for k in range(0, 7))))
+
+
+model.R3.add(expr=(model.QTD_transp_por_base_NP[1] == quicksum(
+    model.Rota_NP[i, j, k] * model.QTD_NP[i, j, k] for i in range(0, 4) for j in range(2, 3) for k in range(0, 7))))
+
+
+# modelo.addConstr((QTD_transp_por_base_NP[2] == gp.quicksum(
+#     Rota_NP[i, j, k] * QTD_NP[i, j, k] for i in range(0, 4) for j in range(3, 4) for k in range(0, 7))))
+
+model.R3.add(expr=(model.QTD_transp_por_base_NP[2] == quicksum(
+    model.Rota_NP[i, j, k] * model.QTD_NP[i, j, k] for i in range(0, 4) for j in range(3, 4) for k in range(0, 7))))
+
 
 '''Identifica a quantidade transportada por base de cada navio grande'''
-modelo.addConstr((QTD_transp_por_base_NG[0] == gp.quicksum(
-    Rota_NG[i, j, k] * QTD_NG[i, j, k] for i in range(0, 4) for j in range(1, 2) for k in range(0, 5))))
+# modelo.addConstr((QTD_transp_por_base_NG[0] == gp.quicksum(
+#     Rota_NG[i, j, k] * QTD_NG[i, j, k] for i in range(0, 4) for j in range(1, 2) for k in range(0, 5))))
 
-modelo.addConstr((QTD_transp_por_base_NG[1] == gp.quicksum(
-    Rota_NG[i, j, k] * QTD_NG[i, j, k] for i in range(0, 4) for j in range(2, 3) for k in range(0, 5))))
 
-modelo.addConstr((QTD_transp_por_base_NG[2] == gp.quicksum(
-    Rota_NG[i, j, k] * QTD_NG[i, j, k] for i in range(0, 4) for j in range(3, 4) for k in range(0, 5))))
+model.R3.add(expr=(model.QTD_transp_por_base_NG[0] == quicksum(
+    model.Rota_NG[i, j, k] * model.QTD_NG[i, j, k] for i in range(0, 4) for j in range(1, 2) for k in range(0, 5))))
+
+# modelo.addConstr((QTD_transp_por_base_NG[1] == gp.quicksum(
+#     Rota_NG[i, j, k] * QTD_NG[i, j, k] for i in range(0, 4) for j in range(2, 3) for k in range(0, 5))))
+
+model.R3.add(expr=(model.QTD_transp_por_base_NG[1] == quicksum(
+    model.Rota_NG[i, j, k] * model.QTD_NG[i, j, k] for i in range(0, 4) for j in range(2, 3) for k in range(0, 5))))
+
+# modelo.addConstr((QTD_transp_por_base_NG[2] == gp.quicksum(
+#     Rota_NG[i, j, k] * QTD_NG[i, j, k] for i in range(0, 4) for j in range(3, 4) for k in range(0, 5))))
+
+model.R3.add(expr=(model.QTD_transp_por_base_NG[2] == quicksum(
+    model.Rota_NG[i, j, k] * model.QTD_NG[i, j, k] for i in range(0, 4) for j in range(3, 4) for k in range(0, 5))))
+
+
 
 '''Garante que todos os treinados por base sejam transportados pelos navios'''
-modelo.addConstr((Q_Treinada_Por_Base[0] == QTD_transp_por_base_NP[0] + QTD_transp_por_base_NG[0]))
-modelo.addConstr((Q_Treinada_Por_Base[1] == QTD_transp_por_base_NP[1] + QTD_transp_por_base_NG[1]))
-modelo.addConstr((Q_Treinada_Por_Base[2] == QTD_transp_por_base_NP[2] + QTD_transp_por_base_NG[2]))
+# modelo.addConstr((Q_Treinada_Por_Base[0] == QTD_transp_por_base_NP[0] + QTD_transp_por_base_NG[0]))
+# modelo.addConstr((Q_Treinada_Por_Base[1] == QTD_transp_por_base_NP[1] + QTD_transp_por_base_NG[1]))
+# modelo.addConstr((Q_Treinada_Por_Base[2] == QTD_transp_por_base_NP[2] + QTD_transp_por_base_NG[2]))
+
+model.R4 = ConstraintList()
+model.R4.add(expr=(model.Q_Treinada_Por_Base[0] == model.QTD_transp_por_base_NP[0] + model.QTD_transp_por_base_NG[0]))
+model.R4.add(expr=(model.Q_Treinada_Por_Base[1] == model.QTD_transp_por_base_NP[1] + model.QTD_transp_por_base_NG[1]))
+model.R4.add(expr=(model.Q_Treinada_Por_Base[2] == model.QTD_transp_por_base_NP[2] + model.QTD_transp_por_base_NG[2]))
 
 '''Identifica a quantidade total transportada das 3 bases'''
-QTD_transp_total = gp.quicksum(QTD_transp_NP[k] * NP_utilizado[k] for k in range(0, 7)) + gp.quicksum(
-    QTD_transp_NG[k] * NG_utilizado[k] for k in range(0, 5))
+# QTD_transp_total = gp.quicksum(QTD_transp_NP[k] * NP_utilizado[k] for k in range(0, 7)) + gp.quicksum(
+#     QTD_transp_NG[k] * NG_utilizado[k] for k in range(0, 5))
+
+
+model.R4.add(expr=(model.QTD_transp_total == quicksum(model.QTD_transp_NP[k] * model.NP_utilizado[k] for k in range(0, 7)) + quicksum(
+    model.QTD_transp_NG[k] * model.NG_utilizado[k] for k in range(0, 5))))
+
 
 '''Garante que a quantidade total transportada seja igual a quantidade total treinada por base'''
-modelo.addConstr((QTD_transp_total == Q_Treinada_Por_Base[0] + Q_Treinada_Por_Base[1] + Q_Treinada_Por_Base[2]))
+# modelo.addConstr((QTD_transp_total == Q_Treinada_Por_Base[0] + Q_Treinada_Por_Base[1] + Q_Treinada_Por_Base[2]))
+
+model.R4.add(expr=(model.QTD_transp_total == model.Q_Treinada_Por_Base[0] + model.Q_Treinada_Por_Base[1] + model.Q_Treinada_Por_Base[2]))
+
+model.R5 = ConstraintList()
+
 
 '''Calcula a distancia percorrida em cada rota pelos navios pequenos'''
-modelo.addConstr((Distancia_rota_NP[0] == (370 / 2) * gp.quicksum(Rota_NP[0, 1, k] + Rota_NP[1, 0, k] for k in range(0, 7))))
+# modelo.addConstr((Distancia_rota_NP[0] == (370 / 2) * gp.quicksum(Rota_NP[0, 1, k] + Rota_NP[1, 0, k] for k in range(0, 7))))
 
-modelo.addConstr((Distancia_rota_NP[1] == (515 / 3) * gp.quicksum(
-    Rota_NP[0, 1, k] + Rota_NP[1, 2, k] + Rota_NP[2, 0, k] for k in range(0, 7))))
+model.R5.add(expr=(model.Distancia_rota_NP[0] == (370 / 2) * quicksum(model.Rota_NP[0, 1, k] + model.Rota_NP[1, 0, k] for k in range(0, 7))))
 
-modelo.addConstr((Distancia_rota_NP[2] == (665 / 3) * gp.quicksum(
-    Rota_NP[0, 2, k] + Rota_NP[2, 3, k] + Rota_NP[3, 0, k] for k in range(0, 7))))
 
-modelo.addConstr(
-    (Distancia_rota_NP[3] == (460 / 2) * gp.quicksum(Rota_NP[0, 2, k] + Rota_NP[2, 0, k] for k in range(0, 7))))
+# modelo.addConstr((Distancia_rota_NP[1] == (515 / 3) * gp.quicksum(
+#     Rota_NP[0, 1, k] + Rota_NP[1, 2, k] + Rota_NP[2, 0, k] for k in range(0, 7))))
 
-modelo.addConstr(
-    (Distancia_rota_NP[4] == (600 / 2) * gp.quicksum(Rota_NP[0, 3, k] + Rota_NP[3, 0, k] for k in range(0, 7))))
+model.R5.add(expr=(model.Distancia_rota_NP[1] == (515 / 3) * quicksum(
+    model.Rota_NP[0, 1, k] + model.Rota_NP[1, 2, k] + model.Rota_NP[2, 0, k] for k in range(0, 7))))
 
-modelo.addConstr((Distancia_rota_NP[5] == (640 / 3) * gp.quicksum(
-    Rota_NP[0, 1, k] + Rota_NP[1, 3, k] + Rota_NP[3, 0, k] for k in range(0, 7))))
+# modelo.addConstr((Distancia_rota_NP[2] == (665 / 3) * gp.quicksum(
+#     Rota_NP[0, 2, k] + Rota_NP[2, 3, k] + Rota_NP[3, 0, k] for k in range(0, 7))))
+
+model.R5.add(expr=(model.Distancia_rota_NP[2] == (665 / 3) * quicksum(
+    model.Rota_NP[0, 2, k] + model.Rota_NP[2, 3, k] + model.Rota_NP[3, 0, k] for k in range(0, 7))))
+
+# modelo.addConstr(
+#     (Distancia_rota_NP[3] == (460 / 2) * gp.quicksum(Rota_NP[0, 2, k] + Rota_NP[2, 0, k] for k in range(0, 7))))
+
+model.R5.add(expr=(model.Distancia_rota_NP[3] == (460 / 2) * quicksum(model.Rota_NP[0, 2, k] + model.Rota_NP[2, 0, k] for k in range(0, 7))))
+
+# modelo.addConstr(
+#     (Distancia_rota_NP[4] == (600 / 2) * gp.quicksum(Rota_NP[0, 3, k] + Rota_NP[3, 0, k] for k in range(0, 7))))
+
+model.R5.add(expr=(model.Distancia_rota_NP[4] == (600 / 2) * quicksum(model.Rota_NP[0, 3, k] + model.Rota_NP[3, 0, k] for k in range(0, 7))))
+
+
+# modelo.addConstr((Distancia_rota_NP[5] == (640 / 3) * gp.quicksum(
+#     Rota_NP[0, 1, k] + Rota_NP[1, 3, k] + Rota_NP[3, 0, k] for k in range(0, 7))))
+
+model.R5.add(expr=(model.Distancia_rota_NP[5] == (640 / 3) * quicksum(
+    model.Rota_NP[0, 1, k] + model.Rota_NP[1, 3, k] + model.Rota_NP[3, 0, k] for k in range(0, 7))))
 
 '''Calcula a distancia percorrida em cada rota pelos navios grandes'''
-modelo.addConstr(
-    (Distancia_rota_NG[0] == (370 / 2) * gp.quicksum(Rota_NG[0, 1, k] + Rota_NG[1, 0, k] for k in range(0, 5))))
+model.R6 = ConstraintList()
 
-modelo.addConstr((Distancia_rota_NG[1] == (515 / 3) * gp.quicksum(
-    Rota_NG[0, 1, k] + Rota_NG[1, 2, k] + Rota_NG[2, 0, k] for k in range(0, 5))))
+# modelo.addConstr((Distancia_rota_NG[0] == (370 / 2) * gp.quicksum(Rota_NG[0, 1, k] + Rota_NG[1, 0, k] for k in range(0, 5))))
 
-modelo.addConstr((Distancia_rota_NG[2] == (665 / 3) * gp.quicksum(
-    Rota_NG[0, 2, k] + Rota_NG[2, 3, k] + Rota_NG[3, 0, k] for k in range(0, 5))))
+model.R6.add(expr=(model.Distancia_rota_NG[0] == (370 / 2) * quicksum(model.Rota_NG[0, 1, k] + model.Rota_NG[1, 0, k] for k in range(0, 5))))
 
-modelo.addConstr(
-    (Distancia_rota_NG[3] == (460 / 2) * gp.quicksum(Rota_NG[0, 2, k] + Rota_NG[2, 0, k] for k in range(0, 5))))
+# modelo.addConstr((Distancia_rota_NG[1] == (515 / 3) * gp.quicksum(
+#     Rota_NG[0, 1, k] + Rota_NG[1, 2, k] + Rota_NG[2, 0, k] for k in range(0, 5))))
 
-modelo.addConstr(
-    (Distancia_rota_NG[4] == (600 / 2) * gp.quicksum(Rota_NG[0, 3, k] + Rota_NG[3, 0, k] for k in range(0, 5))))
+model.R6.add(expr=(model.Distancia_rota_NG[1] == (515 / 3) * quicksum(
+    model.Rota_NG[0, 1, k] + model.Rota_NG[1, 2, k] + model.Rota_NG[2, 0, k] for k in range(0, 5))))
 
-modelo.addConstr((Distancia_rota_NG[5] == (640 / 3) * gp.quicksum(
-    Rota_NG[0, 1, k] + Rota_NG[1, 3, k] + Rota_NG[3, 0, k] for k in range(0, 5))))
+# modelo.addConstr((Distancia_rota_NG[2] == (665 / 3) * gp.quicksum(
+#     Rota_NG[0, 2, k] + Rota_NG[2, 3, k] + Rota_NG[3, 0, k] for k in range(0, 5))))
 
-modelo.addConstr((Distancia_rota_NG[6] == (720 / 4) * gp.quicksum(
-    Rota_NG[0, 1, k] + Rota_NG[1, 2, k] + Rota_NG[2, 3, k] + Rota_NG[3, 3, k] for k in range(0, 5))))
+
+model.R6.add(expr=(model.Distancia_rota_NG[2] == (665 / 3) * quicksum(
+    model.Rota_NG[0, 2, k] + model.Rota_NG[2, 3, k] + model.Rota_NG[3, 0, k] for k in range(0, 5))))
+
+# modelo.addConstr(
+#     (Distancia_rota_NG[3] == (460 / 2) * gp.quicksum(Rota_NG[0, 2, k] + Rota_NG[2, 0, k] for k in range(0, 5))))
+
+model.R6.add(expr=(model.Distancia_rota_NG[3] == (460 / 2) * quicksum(model.Rota_NG[0, 2, k] + model.Rota_NG[2, 0, k] for k in range(0, 5))))
+
+# modelo.addConstr(
+#     (Distancia_rota_NG[4] == (600 / 2) * gp.quicksum(Rota_NG[0, 3, k] + Rota_NG[3, 0, k] for k in range(0, 5))))
+
+model.R6.add(expr=(model.Distancia_rota_NG[4] == (600 / 2) * quicksum(model.Rota_NG[0, 3, k] + model.Rota_NG[3, 0, k] for k in range(0, 5))))
+
+# modelo.addConstr((Distancia_rota_NG[5] == (640 / 3) * gp.quicksum(
+#     Rota_NG[0, 1, k] + Rota_NG[1, 3, k] + Rota_NG[3, 0, k] for k in range(0, 5))))
+
+model.R6.add(expr=(model.Distancia_rota_NG[5] == (640 / 3) * quicksum(
+    model.Rota_NG[0, 1, k] + model.Rota_NG[1, 3, k] + model.Rota_NG[3, 0, k] for k in range(0, 5))))
+
+# modelo.addConstr((Distancia_rota_NG[6] == (720 / 4) * gp.quicksum(
+#     Rota_NG[0, 1, k] + Rota_NG[1, 2, k] + Rota_NG[2, 3, k] + Rota_NG[3, 3, k] for k in range(0, 5))))
+
+model.R6.add(expr=(model.Distancia_rota_NG[6] == (720 / 4) * quicksum(
+    model.Rota_NG[0, 1, k] + model.Rota_NG[1, 2, k] + model.Rota_NG[2, 3, k] + model.Rota_NG[3, 3, k] for k in range(0, 5))))
 
 '''Calcula a distancia total percorrida pelas sondas pequenas'''
-Distancia_percorrida_NP = gp.quicksum(Distancia_rota_NP[k] for k in range(0, 7))
+model.R7 = ConstraintList()
+
+# Distancia_percorrida_NP = gp.quicksum(Distancia_rota_NP[k] for k in range(0, 7))
+model.R7.add(expr=(model.Distancia_percorrida_NP == quicksum(model.Distancia_rota_NP[k] for k in range(0, 7))))
 
 '''Calcula a distancia total percorrida pelas sondas grandes'''
-Distancia_percorrida_NG = gp.quicksum(Distancia_rota_NG[k] for k in range(0, 5))
+# Distancia_percorrida_NG = gp.quicksum(Distancia_rota_NG[k] for k in range(0, 5))
+model.R7.add(expr=(model.Distancia_percorrida_NG == quicksum(model.Distancia_rota_NG[k] for k in range(0, 5))))
 
 '''Calcula o custo fixo total das sondas pequenas utilizadas'''
-Custo_fixo_NP = 5000 * gp.quicksum(NP_utilizado[k] for k in range(0, 7))
+# Custo_fixo_NP = 5000 * gp.quicksum(NP_utilizado[k] for k in range(0, 7))
+model.R7.add(expr=(model.Custo_fixo_NP == 5000 * quicksum(model.NP_utilizado[k] for k in range(0, 7))))
 
 '''Calcula o custo fixo total das sondas grandes utilizadas'''
-Custo_fixo_NG = 10000 * gp.quicksum(NG_utilizado[k] for k in range(0, 5))
+# Custo_fixo_NG = 10000 * gp.quicksum(NG_utilizado[k] for k in range(0, 5))
+model.R7.add(expr=(model.Custo_fixo_NG == 10000 * quicksum(model.NG_utilizado[k] for k in range(0, 5))))
+
 
 '''Define a função objetivo'''
-modelo.setObjective(custo_de_treinamento + Distancia_percorrida_NP * 2 +
-                    Distancia_percorrida_NG * 3 +
-                    Custo_fixo_NP +
-                    Custo_fixo_NG, sense=gp.GRB.MINIMIZE)
+model.obj = Objective(expr=(model.custo_de_treinamento + model.Distancia_percorrida_NP * 2 +
+                    model.Distancia_percorrida_NG * 3 +
+                    model.Custo_fixo_NP +
+                    model.Custo_fixo_NG),
+                      sense = minimize
+                      )
+'''Otimiza o modelo'''
+# optimizer = SolverFactory('ipopt')
+optimizer = SolverFactory('glpk')
+# optimizer = Highs()
+# optimizer = SolverFactory('gurobi')
 
 '''Otimiza o modelo'''
-modelo.optimize()
+results = optimizer.solve(model)
+
+valor_final_fo = model.obj.expr()
+print(f'Valor final da função objetivo: {valor_final_fo}')
