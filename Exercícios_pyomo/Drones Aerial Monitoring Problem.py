@@ -10,6 +10,12 @@ from pyomo.environ import *
 from pyomo.opt import SolverFactory
 from pyomo.contrib.appsi.solvers.highs import Highs
 from pyomo.opt import SolverStatus, TerminationCondition
+import highspy as hspy
+
+np.random.seed(0)
+
+# optimizers = {'glpk':SolverFactory('glpk'), 'highs':Highs(), 'gurobi':SolverFactory('gurobi')}
+optimizers = {'highs':Highs(), 'glpk':SolverFactory('glpk'), 'gurobi':SolverFactory('gurobi')}
 
 def carrega_instancia(numero_instancia):
     '''Função utilizada para carregar a instância'''
@@ -87,199 +93,258 @@ def calcula_distancia(i, r, j, s):
     return dist
 
 '''Cria o dicionário para salvar os resultados'''
-resultados = {'Tempos Máximos': [], 'Quantidade_de_drones': [], 'Z': [], 'Tempo Computacional': [], 'Quantidade de restrições': [], 'Quantidade de variáveis': []}
+resultados = {'id_instancia':[], 'Optimizer':[], 'Tempos Máximos': [], 'Quantidade_de_drones': [], 'Z': [], 'Tempo Computacional': [], 'Quantidade de restrições': [], 'Quantidade de variáveis': []}
 
 '''Define parâmetros que serão variados para avaliar o modelo'''
 total_de_drones = [1, 2, 3, 4, 5]
 tempos_maximos = [100, 120, 140, 160, 180, 200, 300, 1000, 2000]
-# total_de_drones = [5]
-# tempos_maximos = [2000]
 
-'''Carrega a instância'''
-N, N_sem_zero, H, H_sem_zero, A, u, b = carrega_instancia(1)
+for optimizer_name in optimizers.keys():
+    '''Varia a quantidade de drones e o tempo máximo para avaliar os resultados para a instância'''
+    for numero_instancia in [1,2]:
+        '''Carrega a instância'''
+        N, N_sem_zero, H, H_sem_zero, A, u, b = carrega_instancia(numero_instancia)
 
-'''Varia a quantidade de drones e o tempo máximo para avaliar os resultados para a instância'''
-for qtd_drones in total_de_drones:
-    for Tmax in tempos_maximos:
-        inicio = time.time()
+        for qtd_drones in total_de_drones:
+            for Tmax in tempos_maximos:
+                inicio = time.time()
 
-        '''Declara o modelo'''
-        # modelo = grb.Model(name="Drones")
-        model = ConcreteModel()
+                '''Declara o modelo'''
+                # modelo = grb.Model(name="Drones")
+                model = ConcreteModel()
 
-        '''Indices dos drones'''
-        K = range(0, qtd_drones)
+                '''Indices dos drones'''
+                K = range(0, qtd_drones)
 
-        '''==========================Adicionar as variáveis=========================='''
-        # x = modelo.addVars(N, H, N, H, K, vtype=grb.GRB.BINARY, lb=0, name='x')
-        # y = modelo.addVars(N_sem_zero, H_sem_zero, K, vtype=grb.GRB.BINARY, lb=0, name='y')
-        # u_ = modelo.addVars(N, H, K, vtype=grb.GRB.CONTINUOUS, lb=0, name='u_')
+                '''==========================Adicionar as variáveis=========================='''
+                # x = modelo.addVars(N, H, N, H, K, vtype=grb.GRB.BINARY, lb=0, name='x')
+                # y = modelo.addVars(N_sem_zero, H_sem_zero, K, vtype=grb.GRB.BINARY, lb=0, name='y')
+                # u_ = modelo.addVars(N, H, K, vtype=grb.GRB.CONTINUOUS, lb=0, name='u_')
 
-        model.x = Var(N, H, N, H, K, within = Binary, bounds=(0, 1))
-        model.y = Var(N_sem_zero, H_sem_zero, K, within = Binary, bounds=(0, 1))
-        model.u_ = Var(N, H, K, within = Reals)
+                model.x = Var(N, H, N, H, K, within = Binary)
+                model.y = Var(N_sem_zero, H_sem_zero, K, within = Binary)
+                model.u_ = Var(N, H, K, within = PositiveReals, bounds=(0, None))
+                model.funcao_objetivo = Var(within = PositiveReals, bounds=(0, None))
 
-        '''==========================Adiciona Parametros=========================='''
-        t = {(i, r, j, s): calcula_distancia(N[i], H[r], N[j], H[s]) for i in N for r in H for j in N for s in H}
+                '''==========================Adiciona Parametros=========================='''
+                t = {(i, r, j, s): calcula_distancia(N[i], H[r], N[j], H[s]) for i in N for r in H for j in N for s in H}
 
-        '''==========================Adiciona Restricoes=========================='''
+                '''==========================Adiciona Restricoes=========================='''
 
-        # modelo.addConstrs((x[i, r, j, s, k] == 0 for i in N for j in N for r in H for s in H for k in K if (i, r) == (j, s)), name='R0')
-        model.R1 = ConstraintList()
-        for i in N:
-            for j in N:
-                for r in H:
-                    for s in H: 
+                # modelo.addConstrs((x[i, r, j, s, k] == 0 for i in N for j in N for r in H for s in H for k in K if (i, r) == (j, s)), name='R0')
+                model.R1 = ConstraintList()
+                for i in N:
+                    for j in N:
+                        for r in H:
+                            for s in H: 
+                                for k in K:
+                                    if (i, r) == (j, s):
+                                        model.R1.add(expr=(model.x[i, r, j, s, k] == 0))
+
+                
+                model.R2 = ConstraintList()
+                # modelo.addConstrs((grb.quicksum(b[a][i][r]*y[i, r, k] for k in K for r in H_sem_zero for i in N_sem_zero) >= 1 for a in A), name='R2')
+                
+                '''Esta restrição garante que ao menos 1 sonda vigie cada área a em A'''
+                for a in A:
+                    model.R2.add(expr=(quicksum(b[a][i][r]*model.y[i, r, k] for k in K for r in H_sem_zero for i in N_sem_zero) >= 1 ))
+                
+                
+
+                # modelo.addConstrs((grb.quicksum(y[i, r, k] for k in K) <= 1 for i in N_sem_zero for r in H_sem_zero), name='R3')
+                model.R3 = ConstraintList()
+                for i in N_sem_zero:
+                    for r in H_sem_zero:
+                        model.R3.add(expr=(quicksum(model.y[i, r, k] for k in K) <= 1))
+                
+                
+                
+                '''Esta restrição garante que apenas 1 sonda pare em um nó (i, r)'''
+                model.R4 = ConstraintList()
+                
+                for i in N_sem_zero:
+                    for r in H_sem_zero:
                         for k in K:
-                            if (i, r) == (j, s):
-                                model.R1.add(expr=(model.x[i, r, j, s, k] == 0))
-
-        
-        model.R2 = ConstraintList()
-        # modelo.addConstrs((grb.quicksum(b[a][i][r]*y[i, r, k] for k in K for r in H_sem_zero for i in N_sem_zero) >= 1 for a in A), name='R2')
-        
-        '''Esta restrição garante que ao menos 1 sonda vigie cada área a em A'''
-        for a in A:
-            model.R2.add(expr=(quicksum(b[a][i][r]*model.y[i, r, k] for k in K for r in H_sem_zero for i in N_sem_zero) >= 1 ))
-        
-        
-
-        # modelo.addConstrs((grb.quicksum(y[i, r, k] for k in K) <= 1 for i in N_sem_zero for r in H_sem_zero), name='R3')
-        model.R3 = ConstraintList()
-        for i in N_sem_zero:
-            for r in H_sem_zero:
-                model.R3.add(expr=(quicksum(model.y[i, r, k] for k in K) <= 1))
-        
-        
-        
-        '''Esta restrição garante que apenas 1 sonda pare em um nó (i, r)'''
-        model.R4 = ConstraintList()
-        
-        for i in N_sem_zero:
-            for r in H_sem_zero:
+                            model.R4.add(expr=(quicksum(model.x[i, r, j, s, k] for s in H for j in N if i != j and r != s) == model.y[i, r, k]))
+                            # modelo.addConstrs((grb.quicksum(x[i, r, j, s, k] for s in H for j in N if i != j and r != s) == y[i, r, k] for i in N_sem_zero for r in H_sem_zero for k in K), name='R4')
+                
+                model.R5 = ConstraintList()
+                model.R6 = ConstraintList()
+                
                 for k in K:
-                    model.R4.add(expr=(quicksum(model.x[i, r, j, s, k] for s in H for j in N if i != j and r != s) == model.y[i, r, k]))
-                    # modelo.addConstrs((grb.quicksum(x[i, r, j, s, k] for s in H for j in N if i != j and r != s) == y[i, r, k] for i in N_sem_zero for r in H_sem_zero for k in K), name='R4')
-        
-        model.R5 = ConstraintList()
-        model.R6 = ConstraintList()
-        
-        for k in K:
-            model.R5.add(expr=(quicksum(model.x[0, 0, j, s, k] for s in H for j in N) == 1))
-            # modelo.addConstrs((grb.quicksum(x[0, 0, j, s, k] for s in H for j in N) == 1 for k in K), name='R5')
+                    model.R5.add(expr=(quicksum(model.x[0, 0, j, s, k] for s in H for j in N) == 1))
+                    # modelo.addConstrs((grb.quicksum(x[0, 0, j, s, k] for s in H for j in N) == 1 for k in K), name='R5')
+                    
+                    model.R6.add(expr=(quicksum(model.x[i, r, 0, 0, k] for i in N for r in H) == 1))
+                    # modelo.addConstrs((grb.quicksum(x[i, r, 0, 0, k] for i in N for r in H) == 1 for k in K), name='R6')
+
+                model.R7 = ConstraintList()
+                for i in N:
+                    for r in H:
+                        for k in K:
+                            model.R7.add(expr=(quicksum(model.x[i, r, j, s, k] for s in H for j in N if i != j and r != s) == quicksum(model.x[j, s, i, r, k] for s in H for j in N if i != j and r != s)))
+                            # modelo.addConstrs((grb.quicksum(x[i, r, j, s, k] for s in H for j in N if i != j and r != s) == grb.quicksum(x[j, s, i, r, k] for s in H for j in N if i != j and r != s) for i in N for r in H for k in K), name='R7')
+                
+                model.R8 = ConstraintList()
+                for k in K:
+                    model.R8.add(expr=(quicksum(t[i, r, j, s]*model.x[i, r, j, s, k] for r in H for s in H for i in N for j in N) + quicksum(u[i][r]*model.y[i, r, k] for r in H_sem_zero for i in N_sem_zero) <= Tmax))
+                    # modelo.addConstrs(((grb.quicksum(t[i, r, j, s]*x[i, r, j, s, k] for r in H for s in H for i in N for j in N) + grb.quicksum(u[i][r]*y[i, r, k] for r in H_sem_zero for i in N_sem_zero)) <= Tmax for k in K), name='R9')
+                
+                
+                '''Esta restrição garante que o tempo que a sonda percorre somado ao tempo que ela fica parada em uma área não exceda o tempo máximo que o drone pode voar'''
+
+                model.R9 = ConstraintList()
+                
+                # modelo.addConstrs((u_[0, 0, k] == 0 for k in K), name='R12')
+
+                for k in K:
+                    model.R9.add(expr=(model.u_[0, 0, k] == 0))
+
+
+                model.R10 = ConstraintList()
+                # modelo.addConstrs((u_[j, s, k] >= u_[i, r, k] +1 -len(N)*len(H)*(1-x[i, r, j, s, k]) for i in N for r in H for j in N_sem_zero for s in H_sem_zero for k in K if i != j and r != s), name='R13')        
+                for i in N:
+                    for r in H:
+                        for j in N_sem_zero:
+                            for s in H_sem_zero:
+                                for k in K:
+                                    if i != j and r != s:
+                                        model.R10.add(expr=(model.u_[j, s, k] >= model.u_[i, r, k] +1 -len(N)*len(H)*(1-model.x[i, r, j, s, k])))
+
+                
+                
+                model.R11 = ConstraintList()
+                # modelo.addConstrs((u_[i, r, k] <= len(N)*len(H)-1 for i in N for r in H for k in K), name='R14')
+
+                
+                for i in N:
+                    for r in H:
+                        for k in K:
+                            model.R11.add(expr=(model.u_[i, r, k] <= len(N)*len(H)-1))
+
+                # breakpoint()
+                '''Declara a função objetivo'''
+                # modelo.setObjective((grb.quicksum(t[i, r, j, s]*x[i, r, j, s, k] for r in H for s in H for i in N for j in N for k in K) + grb.quicksum(u[i][r]*y[i, r, k] for r in H_sem_zero for i in N_sem_zero for k in K)))
+
+                
+                model.R12 = ConstraintList()
+                model.R12.add(expr=(model.funcao_objetivo == quicksum(t[i, r, j, s]*model.x[i, r, j, s, k] for r in H for s in H for i in N for j in N for k in K) + quicksum(u[i][r]*model.y[i, r, k] for r in H_sem_zero for i in N_sem_zero for k in K))) 
+
+                '''Define a função objetivo'''
+                model.obj = Objective(expr=(model.funcao_objetivo),
+                                    sense = minimize
+                                    )
+                # '''Define a função objetivo'''
+                # model.obj = Objective(expr=(quicksum(t[i, r, j, s] for r in H for s in H for i in N for j in N) + quicksum(u[i][r]*model.y[i, r, k] for r in H_sem_zero for i in N_sem_zero for k in K)),
+                #                     sense = minimize
+                #                     )
+                
+                # model.pprint()
+                # breakpoint()
+                '''==========================Define a função Objetivo=========================='''
+                # modelo.ModelSense = grb.GRB.MINIMIZE
+                # modelo.update()
+                # modelo.write("instancia_spam.lp")
+
+                '''==========================Limita o tempo de execução=========================='''
+                # modelo.Params.timeLimit = 100
+
+                '''==========================Otimiza o modelo=========================='''
+                # modelo.optimize()
+
+                # '''Otimiza o modelo'''
+                # optimizer = SolverFactory('ipopt')
             
-            model.R6.add(expr=(quicksum(model.x[i, r, 0, 0, k] for i in N for r in H) == 1))
-            # modelo.addConstrs((grb.quicksum(x[i, r, 0, 0, k] for i in N for r in H) == 1 for k in K), name='R6')
+                # optimizer = SolverFactory('glpk')
+                optimizer = optimizers[optimizer_name]
+                
+                # optimizer.options['seconds'] = 100
+                # optimizer = Highs()
+                # optimizer = SolverFactory('gurobi')
 
-        model.R7 = ConstraintList()
-        for i in N:
-            for r in H:
-                for k in K:
-                    model.R7.add(expr=(quicksum(model.x[i, r, j, s, k] for s in H for j in N if i != j and r != s) == quicksum(model.x[j, s, i, r, k] for s in H for j in N if i != j and r != s)))
-                    # modelo.addConstrs((grb.quicksum(x[i, r, j, s, k] for s in H for j in N if i != j and r != s) == grb.quicksum(x[j, s, i, r, k] for s in H for j in N if i != j and r != s) for i in N for r in H for k in K), name='R7')
-        
-        model.R8 = ConstraintList()
-        for k in K:
-            model.R8.add(expr=(quicksum(t[i, r, j, s]*model.x[i, r, j, s, k] for r in H for s in H for i in N for j in N) + quicksum(u[i][r]*model.y[i, r, k] for r in H_sem_zero for i in N_sem_zero) <= Tmax))
-            # modelo.addConstrs(((grb.quicksum(t[i, r, j, s]*x[i, r, j, s, k] for r in H for s in H for i in N for j in N) + grb.quicksum(u[i][r]*y[i, r, k] for r in H_sem_zero for i in N_sem_zero)) <= Tmax for k in K), name='R9')
-        
-        
-        '''Esta restrição garante que o tempo que a sonda percorre somado ao tempo que ela fica parada em uma área não exceda o tempo máximo que o drone pode voar'''
+                # model.write("temp_model.lp")
 
-        model.R9 = ConstraintList()
-        
-        # modelo.addConstrs((u_[0, 0, k] == 0 for k in K), name='R12')
+                '''Otimiza o modelo'''
+                print('================================================')
+                if optimizer_name != 'highs':
+                    results = optimizer.solve(model, tee=True, timelimit=100)
+                
+                else:
+                    optimizer._config.time_limit = 10.0
+                    optimizer.config.time_limit = 10.0
+                    # optimizer.log_to_console = True
 
-        for k in K:
-            model.R9.add(expr=(model.u_[0, 0, k] == 0))
+                    try:
+                        # breakpoint()
+                        # results = optimizer.solve(model, options={'log_to_console' : True, 'time_limit':100})
+                        # optimizer._config._visibility = 1
+                        results = optimizer.solve(model)
 
+                    except: 
+                        # optimizer._config._visibility = 1
+                        optimizer.config.load_solution=False
+                        results = optimizer.solve(model)
 
-        model.R10 = ConstraintList()
-        # modelo.addConstrs((u_[j, s, k] >= u_[i, r, k] +1 -len(N)*len(H)*(1-x[i, r, j, s, k]) for i in N for r in H for j in N_sem_zero for s in H_sem_zero for k in K if i != j and r != s), name='R13')        
-        for i in N:
-            for r in H:
-                for j in N_sem_zero:
-                    for s in H_sem_zero:
-                        for k in K:
-                            if i != j and r != s:
-                                model.R10.add(expr=(model.u_[j, s, k] >= model.u_[i, r, k] +1 -len(N)*len(H)*(1-model.x[i, r, j, s, k])))
+                '''Identifica o tempo final'''
+                final = time.time()
+                print(f'Tempo final: {round(final-inicio, 3)}')
 
-        
-        
-        model.R11 = ConstraintList()
-        # modelo.addConstrs((u_[i, r, k] <= len(N)*len(H)-1 for i in N for r in H for k in K), name='R14')
+                # breakpoint()
+                #results.termination_condition == TerminationCondition.optimal
+                if optimizer_name !='highs' and (results.solver.status == SolverStatus.ok) and (results.solver.termination_condition == TerminationCondition.optimal):
+                    valor_final_fo = results.obj.expr()
+                    print(f'Valor final da função objetivo: {valor_final_fo}')
 
-        
-        for i in N:
-            for r in H:
-                for k in K:
-                    model.R11.add(expr=(model.u_[i, r, k] <= len(N)*len(H)-1))
+                    '''Salva os resultados'''
+                    resultados['id_instancia'].append(numero_instancia)
+                    resultados['Optimizer'].append(optimizer_name)
+                    resultados['Tempos Máximos'].append(round(Tmax, 3))
+                    resultados['Quantidade_de_drones'].append(round(qtd_drones, 3))
+                    resultados['Tempo Computacional'].append(round(final-inicio, 3))
+                    # resultados['Quantidade de variáveis'].append(round(model.NumVars, 3))
+                    # resultados['Quantidade de restrições'].append(round(model.NumConstrs, 3))
 
-        # breakpoint()
-        '''Declara a função objetivo'''
-        # modelo.setObjective((grb.quicksum(t[i, r, j, s]*x[i, r, j, s, k] for r in H for s in H for i in N for j in N for k in K) + grb.quicksum(u[i][r]*y[i, r, k] for r in H_sem_zero for i in N_sem_zero for k in K)))
+                    if isinstance(model.obj.expr(), float):
+                        resultados['Z'].append(round(model.obj.expr(), 3))
+                    else:
+                        resultados['Z'].append('inf')
+                
+                elif optimizer_name =='highs' and (results.termination_condition.value!=9):
 
-        model.FO = Var(within = Reals)
-        model.R12 = ConstraintList()
-        model.R12.add(expr=(model.FO == quicksum(t[i, r, j, s]*model.x[i, r, j, s, k] for r in H for s in H for i in N for j in N for k in K) + quicksum(u[i][r]*model.y[i, r, k] for r in H_sem_zero for i in N_sem_zero for k in K))) 
+                    # print('results.termination_condition.value')
+                    # print(results.termination_condition.value)
+                    # breakpoint()
+                    # valor_final_fo = results.obj.expr()
+                    valor_final_fo = results.best_objective_bound
+                    print(f'Valor final da função objetivo: {valor_final_fo}')
 
-        '''Define a função objetivo'''
-        model.obj = Objective(expr=(model.FO),
-                            sense = minimize
-                            )
-        # '''Define a função objetivo'''
-        # model.obj = Objective(expr=(quicksum(t[i, r, j, s] for r in H for s in H for i in N for j in N) + quicksum(u[i][r]*model.y[i, r, k] for r in H_sem_zero for i in N_sem_zero for k in K)),
-        #                     sense = minimize
-        #                     )
-        
-        # model.pprint()
-        '''==========================Define a função Objetivo=========================='''
-        # modelo.ModelSense = grb.GRB.MINIMIZE
-        # modelo.update()
-        # modelo.write("instancia_spam.lp")
+                    '''Salva os resultados'''
+                    resultados['id_instancia'].append(numero_instancia)
+                    resultados['Optimizer'].append(optimizer_name)
+                    resultados['Tempos Máximos'].append(round(Tmax, 3))
+                    resultados['Quantidade_de_drones'].append(round(qtd_drones, 3))
+                    resultados['Tempo Computacional'].append(round(final-inicio, 3))
+                    # resultados['Quantidade de variáveis'].append(round(model.NumVars, 3))
+                    # resultados['Quantidade de restrições'].append(round(model.NumConstrs, 3))
 
-        '''==========================Limita o tempo de execução=========================='''
-        # modelo.Params.timeLimit = 100
-
-        '''==========================Otimiza o modelo=========================='''
-        # modelo.optimize()
-
-        '''Otimiza o modelo'''
-        # optimizer = SolverFactory('ipopt')
-        optimizer = SolverFactory('glpk')
-        # optimizer = Highs()
-        # optimizer = SolverFactory('gurobi')
-
-        '''Otimiza o modelo'''
-        # results = optimizer.solve(model)
-        
-        results = optimizer.solve(optimizer) # Solving a model instance  
-        # instance.load(results) # Loading solution into results object
-
-        '''Identifica o tempo final'''
-        final = time.time()
-
-
-        if (results.solver.status == SolverStatus.ok) and (results.solver.termination_condition == TerminationCondition.optimal):
-            # Do something when the solution in optimal and feasible
-            valor_final_fo = model.obj.expr()
-            print(f'Valor final da função objetivo: {valor_final_fo}')
-
-
-            # # '''Salva os resultados'''
-            resultados['Tempos Máximos'].append(round(Tmax, 3))
-            resultados['Quantidade_de_drones'].append(round(qtd_drones, 3))
-            resultados['Tempo Computacional'].append(round(final-inicio, 3))
-            # resultados['Quantidade de variáveis'].append(round(model.NumVars, 3))
-            # resultados['Quantidade de restrições'].append(round(model.NumConstrs, 3))
-
-            if isinstance(model.obj.expr(), float):
-                resultados['Z'].append(round(model.obj.expr(), 3))
-            else:
-                resultados['Z'].append('inf')
-            # breakpoint()
+                    if isinstance(model.obj.expr(), float):
+                        resultados['Z'].append(round(model.obj.expr(), 3))
+                    else:
+                        resultados['Z'].append('inf')
+    
+                else:
+                    valor_final_fo = 'inf'
+                    print(f'Valor final da função objetivo: {valor_final_fo}')
+                    
+                    '''Salva os resultados'''
+                    resultados['id_instancia'].append(numero_instancia)
+                    resultados['Optimizer'].append(optimizer_name)
+                    resultados['Tempos Máximos'].append(round(Tmax, 3))
+                    resultados['Quantidade_de_drones'].append(round(qtd_drones, 3))
+                    resultados['Tempo Computacional'].append(round(final-inicio, 3))
+                    resultados['Z'].append('inf')
 
 print('====================================')
 print(resultados)
 '''Salva os resultados gerados em um arquivo .csv'''
-pd.DataFrame(resultados).to_csv('resultados_drones_glpk.csv', index=False, sep=';')
+pd.DataFrame(resultados).to_csv('resultados_drones_completo.csv', index=False, sep=';')
