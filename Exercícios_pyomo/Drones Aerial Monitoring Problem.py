@@ -14,7 +14,8 @@ import highspy
 
 np.random.seed(0)
 #, 'glpk':SolverFactory('glpk')
-optimizers = {'highs':Highs(), 'gurobi':SolverFactory('gurobi')}
+# optimizers = {'highs':Highs(), 'gurobi':SolverFactory('gurobi')}
+optimizers = {'highs':Highs()}
 
 def highs_solver(t_max_solver):
 
@@ -248,9 +249,13 @@ for t_max_solver in tempos_maximos_disponiveis_solver:
                     
                     '''Otimiza o modelo'''
                     print('================================================')
-                    if optimizer_name != 'highs':
+                    if optimizer_name != 'highs' and optimizer_name !='gurobi':
                         results = optimizer.solve(model, tee=True, timelimit=t_max_solver)
                     
+                    elif optimizer_name == 'gurobi':
+                        # model.params.timeLimit = t_max_solver
+                        optimizer. options['TimeLimit'] = t_max_solver
+                        results = optimizer.solve(model, tee=True)
                     else:
                         model.write("drone.mps")
                         h_model, model_status, valor_final_fo = highs_solver(t_max_solver)
