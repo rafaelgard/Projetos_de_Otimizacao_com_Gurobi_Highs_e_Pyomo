@@ -591,13 +591,13 @@ model.R7.add(expr=(model.Custo_fixo_NG == 10000 * quicksum(model.NG_utilizado[k]
 
 # model.R4.add(expr=(model.QTD_transp_total == quicksum(model.QTD_transp_NP[k] * model.NP_utilizado[k] for k in range(0, 7)) + quicksum(
 
-
-'''Calcula o custo fixo total das navios grandes utilizadas'''
+'''Garante que caso um navio pequeno seja utilizado, seja corretamente identificado'''
 model.r8 = ConstraintList()
 for i in range(0, 7):
     # model.r8.add(expr=(model.NP_utilizado[i]*M>=quicksum(model.QTD_transp_NP[k] for k in range(0, 7))))
     model.r8.add(expr=(model.NP_utilizado[i]*M>=model.QTD_transp_NP[i]))
 
+'''Garante que caso um navio grande seja utilizado, seja corretamente identificado'''
 model.r9 = ConstraintList()
 for i in range(0, 5):
     # model.r9.add(expr=(model.NG_utilizado[i]*M>=quicksum(model.QTD_transp_NG[k] for k in range(0, 5))))
