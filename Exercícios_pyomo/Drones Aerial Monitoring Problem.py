@@ -16,6 +16,7 @@ np.random.seed(0)
 #, 'glpk':SolverFactory('glpk')
 # optimizers = {'highs':Highs(), 'gurobi':SolverFactory('gurobi')}
 optimizers = {'highs':Highs()}
+# optimizers = {'gurobi':SolverFactory('gurobi')}
 
 def highs_solver(t_max_solver):
 
@@ -42,6 +43,7 @@ def highs_solver(t_max_solver):
     basis = h.getBasis()
     info = h.getInfo()
     model_status = h.getModelStatus()
+    # h.kSolutionStatusFeasible()
     print('Model status = ', h.modelStatusToString(model_status))
     print('Optimal objective = ', info.objective_function_value)
     print('Iteration count = ', info.simplex_iteration_count)
@@ -49,7 +51,8 @@ def highs_solver(t_max_solver):
     print('Dual solution status = ', h.solutionStatusToString(info.dual_solution_status))
     print('Basis validity = ', h.basisValidityToString(info.basis_validity))
 
-    return h, model_status.value , info.objective_function_value
+    # breakpoint()
+    return h, model_status.value, model_status.name, info.objective_function_value
     # breakpoint()
 
 
@@ -129,7 +132,8 @@ def calcula_distancia(i, r, j, s):
     return dist
 
 '''Cria o dicionário para salvar os resultados'''
-resultados = {'id_instancia':[], 'Optimizer':[], 'Tempos Máximos': [], 'Quantidade_de_drones': [], 'Z': [], 'Tempo Computacional': [], 'Quantidade de restrições': [], 'Quantidade de variáveis': [], 't_max_solver':[]}
+# resultados = {'id_instancia':[], 'Optimizer':[], 'Tempos Máximos': [], 'Quantidade_de_drones': [], 'Z': [], 'Tempo Computacional': [], 'Quantidade de restrições': [], 'Quantidade de variáveis': [], 't_max_solver':[]}
+resultados = {'id_instancia':[], 'Optimizer':[], 'Tempos Máximos': [], 'Quantidade_de_drones': [], 'Z': [], 'Tempo Computacional': [], 't_max_solver':[]}
 
 '''Define parâmetros que serão variados para avaliar o modelo'''
 total_de_drones = [1, 2, 3, 4, 5]
@@ -254,35 +258,26 @@ for t_max_solver in tempos_maximos_disponiveis_solver:
                     
                     elif optimizer_name == 'gurobi':
                         # model.params.timeLimit = t_max_solver
-                        optimizer. options['TimeLimit'] = t_max_solver
+                        optimizer.options['TimeLimit'] = t_max_solver
                         results = optimizer.solve(model, tee=True)
-                    else:
+                    
+                    elif optimizer_name == 'highs':
+                        # try:
                         model.write("drone.mps")
-                        h_model, model_status, valor_final_fo = highs_solver(t_max_solver)
+                        # breakpoint()
+                        h_model, model_status, model_status_name, valor_final_fo = highs_solver(t_max_solver)
                         
-                    '''Identifica o tempo final'''
+                        # except:
+                            # print('Falhou')
+                            # breakpoint()
+
+                    '''Identifica o tempo final''' 
                     final = time.time()
                     print(f'Tempo final: {round(final-inicio, 3)}')
 
-                    if optimizer_name !='highs' and (results.solver.status == SolverStatus.ok) and (results.solver.termination_condition == TerminationCondition.optimal):
+                    if optimizer_name == 'gurobi' and (results.solver.status == SolverStatus.ok) and (results.solver.termination_condition == TerminationCondition.optimal):
+                        # breakpoint()
                         valor_final_fo = results.obj.expr()
-                        print(f'Valor final da função objetivo: {valor_final_fo}')
-
-                        '''Salva os resultados'''
-                        resultados['id_instancia'].append(numero_instancia)
-                        resultados['Optimizer'].append(optimizer_name)
-                        resultados['Tempos Máximos'].append(round(Tmax, 3))
-                        resultados['Quantidade_de_drones'].append(round(qtd_drones, 3))
-                        resultados['Tempo Computacional'].append(round(final-inicio, 3))
-                        # resultados['Quantidade de variáveis'].append(round(model.NumVars, 3))
-                        # resultados['Quantidade de restrições'].append(round(model.NumConstrs, 3))
-
-                        if isinstance(model.obj.expr(), float):
-                            resultados['Z'].append(round(model.obj.expr(), 3))
-                        else:
-                            resultados['Z'].append('inf')
-                    
-                    elif optimizer_name =='highs' and model_status !=8 and valor_final_fo!='inf':
                         print(f'Valor final da função objetivo: {valor_final_fo}')
 
                         '''Salva os resultados'''
@@ -299,7 +294,30 @@ for t_max_solver in tempos_maximos_disponiveis_solver:
                             resultados['Z'].append(round(model.obj.expr(), 3))
                         else:
                             resultados['Z'].append('inf')
+                    
+                    elif optimizer_name =='highs':
+
+                        if model_status_name =='kInfeasible':
+                            valor_final_fo == 'inf'
+                        
+
+                        '''Salva os resultados'''
+                        resultados['id_instancia'].append(numero_instancia)
+                        resultados['Optimizer'].append(optimizer_name)
+                        resultados['t_max_solver'].append(t_max_solver)
+                        resultados['Tempos Máximos'].append(round(Tmax, 3))
+                        resultados['Quantidade_de_drones'].append(round(qtd_drones, 3))
+                        resultados['Tempo Computacional'].append(round(final-inicio, 3))
+                        # resultados['Quantidade de variáveis'].append(round(model.NumVars, 3))
+                        # resultados['Quantidade de restrições'].append(round(model.NumConstrs, 3))
+
+                        if isinstance(valor_final_fo, float):
+                            resultados['Z'].append(round(valor_final_fo, 3))
+                        else:
+                            resultados['Z'].append(valor_final_fo)
         
+                        print(f'Valor final da função objetivo: {valor_final_fo}')
+                    
                     else:
                         valor_final_fo = 'inf'
                         print(f'Valor final da função objetivo: {valor_final_fo}')
@@ -316,4 +334,7 @@ for t_max_solver in tempos_maximos_disponiveis_solver:
 print('====================================')
 print(resultados)
 '''Salva os resultados gerados em um arquivo .csv'''
-pd.DataFrame(resultados).to_csv('resultados_drones_completo.csv', index=False, sep=';')
+try:
+    pd.DataFrame(resultados).fillna('-').to_csv('resultados_drones_completo.csv', index=False, sep=';')
+except:
+    breakpoint()
