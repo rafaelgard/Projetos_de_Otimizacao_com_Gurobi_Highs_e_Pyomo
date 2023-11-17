@@ -13,7 +13,7 @@ Este repositório contém implementações de 4 problemas de otimização, todos
 3. **Problema de Alocação de Combustíveis em Navios com Múltiplas Capacidades em Terminais Portuários**
    - Solução otimizada para a alocação de combustíveis de diversos tipos em navios, considerando múltiplas capacidades em terminais portuários.
 
-4. **Artigo: Roteirização de Drones para Vigilância de Áreas de Interesse**
+4. **Artigo: "Drones Aerial Monitoring Problem"**
    - Baseado no artigo "Drones Aerial Monitoring Problem" (DOI: [10.1016/j.cor.2019.01.001](https://doi.org/10.1016/j.cor.2019.01.001)), este problema foca na roteirização de drones para vigilância de áreas estratégicas.
 
 ## Funções Úteis
