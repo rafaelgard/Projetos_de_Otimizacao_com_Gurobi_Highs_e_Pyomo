@@ -18,7 +18,10 @@ Este repositório contém implementações de exercícios e um artigo, todos des
 
 ## Funções Úteis
 
-Além das implementações específicas, este repositório também disponibiliza algumas funções úteis que podem ser utilizadas em conjunto com a biblioteca Gurobipy e Pyomo.
+Além das implementações específicas, este repositório também disponibiliza algumas funções úteis que podem ser utilizadas em conjunto com a biblioteca Gurobipy, Highspy e Pyomo.
+
+- Imprimir e salvar resultados de um modelo criado na biblioteca Gurobipy
+- Otimizar um modelo criado no pyomo pelo solver Highs podendo acompanhar a execução do processo de otimização, assim como a otimização de hiperparâmetros do otimizador.
 
 ## Pacotes Requeridos
 - Python 3
