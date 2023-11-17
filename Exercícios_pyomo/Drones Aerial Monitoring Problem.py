@@ -1,11 +1,10 @@
 '''Importa as bibliotecas'''
 import random
 import time
-# import gurobipy as grb
+import os
 import numpy as np
 import pandas as pd
 import numpy as np
-
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
 from pyomo.contrib.appsi.solvers.highs import Highs
@@ -227,6 +226,7 @@ for t_max_solver in tempos_maximos_disponiveis_solver:
                         path = "Exercícios_pyomo\drone.mps"
                         model.write(path)
                         h_model, solution, model_status, model_status_name, valor_final_fo = highs_solver(path, t_max_solver)
+                        os.remove(path)
 
                     '''Identifica o tempo final''' 
                     final = time.time()
