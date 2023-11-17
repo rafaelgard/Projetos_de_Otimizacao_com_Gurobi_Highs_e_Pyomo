@@ -15,9 +15,9 @@ Penalidade = [10, 8, 6]
 M = 1000000
 
 '''Cria o modelo'''
-# modelo = gp.Model(name="problemadoscombustiveis")
 model = ConcreteModel()
 
+'''Define os índices'''
 combustiveis = range(0, 5)
 tanques = range(0, 3)
 
@@ -47,8 +47,6 @@ for i in combustiveis:
 '''R2: Identifica o volume não atendido'''
 model.R2 = ConstraintList()
 for j in tanques:
-    # model.R2.add(expr=(model.Vol_atend[j] == sum(model.Vol[i, j] * model.Bin_tipo[i, j] for i in combustiveis)))
-    # model.R2.add(expr=(model.Vol_atend[j] >= sum(model.Vol[i, j] - M*(model.Bin_tipo[i, j])  for i in combustiveis)))
     model.R2.add(expr=(model.Vol_atend[j] == sum(model.Vol[i, j]  for i in combustiveis)))
 
 '''R3: Garante que Bin_tipo[i, j] seja igual a 1 quando Vol[i, j]>0 e 0 caso contrário'''
@@ -60,8 +58,6 @@ for j in tanques:
 '''R4: Limita a quantidade de combustível a capacidade máxima do tanque'''
 model.R4 = ConstraintList()
 for i in combustiveis:
-    # model.R3.add(expr=(sum(model.Vol[i, j] * model.Bin_tipo[i, j] for j in tanques) <= V_max_tanque[i]))
-    # model.R3.add(expr=(sum(model.Vol[i, j] - M*(1-model.Bin_tipo[i, j]) for j in tanques) <= V_max_tanque[i]))
     model.R4.add(expr=(sum(model.Vol[i, j] - M*(model.Bin_tipo[i, j]) for j in tanques) <= V_max_tanque[i]))
 
 '''R5: Limita a quantidade máxima não atendida'''
@@ -107,11 +103,11 @@ model.obj = Objective(expr=(sum(model.Vol_n_atendido_sum[j] for j in tanques)),
 
 model.pprint()
 
-# optimizer = SolverFactory('ipopt')
-# optimizer = SolverFactory('glpk')
 optimizer = Highs()
+# optimizer = SolverFactory('glpk')
 # optimizer = SolverFactory('gurobi')
 
+# habilite caso utilize o gplk para verificar o processo de otimização
 # results = optimizer.solve(model, tee=True)
 results = optimizer.solve(model)
 

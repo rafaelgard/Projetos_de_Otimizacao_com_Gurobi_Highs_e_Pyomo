@@ -10,51 +10,13 @@ from pyomo.environ import *
 from pyomo.opt import SolverFactory
 from pyomo.contrib.appsi.solvers.highs import Highs
 from pyomo.opt import SolverStatus, TerminationCondition
-import highspy
+from ..utils.utilidades import highs_solver
 
 np.random.seed(0)
 #, 'glpk':SolverFactory('glpk')
 # optimizers = {'highs':Highs(), 'gurobi':SolverFactory('gurobi')}
 optimizers = {'highs':Highs()}
 # optimizers = {'gurobi':SolverFactory('gurobi')}
-
-def highs_solver(t_max_solver):
-
-    h = highspy.Highs()
-
-    # Read a model from MPS file model.mps
-    filename = 'drone.mps'
-    status = h.readModel(filename)
-    print('Reading model file ', filename, ' returns a status of ', status)
-    # filename = 'model.dat'
-    # status = h.readModel(filename)
-    # print('Reading model file ', filename, ' returns a status of ', status)
-
-    h.setOptionValue("time_limit", t_max_solver)
-    # h.setOptionValue("parallel", True)
-    # h.setOptionValue("threads", 12)
-    # h.setOptionValue("mip_rel_gap", 0.0001)
-    # h.setOptionValue("mip_heuristic_effort", 0.3)
-    # h.write_model_to_file('model_highs.mps') # nao funcuiba
-
-    h.run()
-
-    solution = h.getSolution()
-    basis = h.getBasis()
-    info = h.getInfo()
-    model_status = h.getModelStatus()
-    # h.kSolutionStatusFeasible()
-    print('Model status = ', h.modelStatusToString(model_status))
-    print('Optimal objective = ', info.objective_function_value)
-    print('Iteration count = ', info.simplex_iteration_count)
-    print('Primal solution status = ', h.solutionStatusToString(info.primal_solution_status))
-    print('Dual solution status = ', h.solutionStatusToString(info.dual_solution_status))
-    print('Basis validity = ', h.basisValidityToString(info.basis_validity))
-
-    # breakpoint()
-    return h, model_status.value, model_status.name, info.objective_function_value
-    # breakpoint()
-
 
 def carrega_instancia(numero_instancia):
     '''Função utilizada para carregar a instância'''
@@ -257,26 +219,20 @@ for t_max_solver in tempos_maximos_disponiveis_solver:
                         results = optimizer.solve(model, tee=True, timelimit=t_max_solver)
                     
                     elif optimizer_name == 'gurobi':
-                        # model.params.timeLimit = t_max_solver
                         optimizer.options['TimeLimit'] = t_max_solver
                         results = optimizer.solve(model, tee=True)
                     
                     elif optimizer_name == 'highs':
                         # try:
-                        model.write("drone.mps")
-                        # breakpoint()
-                        h_model, model_status, model_status_name, valor_final_fo = highs_solver(t_max_solver)
-                        
-                        # except:
-                            # print('Falhou')
-                            # breakpoint()
+                        path = "Exercícios_pyomo\drone.mps"
+                        model.write(path)
+                        h_model, solution, model_status, model_status_name, valor_final_fo = highs_solver(path, t_max_solver)
 
                     '''Identifica o tempo final''' 
                     final = time.time()
                     print(f'Tempo final: {round(final-inicio, 3)}')
 
                     if optimizer_name == 'gurobi' and (results.solver.status == SolverStatus.ok) and (results.solver.termination_condition == TerminationCondition.optimal):
-                        # breakpoint()
                         valor_final_fo = results.obj.expr()
                         print(f'Valor final da função objetivo: {valor_final_fo}')
 
@@ -333,8 +289,13 @@ for t_max_solver in tempos_maximos_disponiveis_solver:
 
 print('====================================')
 print(resultados)
+
+resultados = pd.DataFrame(resultados).fillna('-')
+
 '''Salva os resultados gerados em um arquivo .csv'''
 try:
-    pd.DataFrame(resultados).fillna('-').to_csv('resultados_drones_completo.csv', index=False, sep=';')
+    resultados.to_csv('Exercícios_pyomo\resultados_drones_completo.csv', index=False, sep=';')
+
 except:
+    print('Erro ao salvar resultados!')
     breakpoint()
