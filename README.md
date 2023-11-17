@@ -1,5 +1,5 @@
 # Projetos de Otimização com Gurobi e Pyomo
-![Alt text](images\cover.jpg)
+![Alt text](images/cover.jpg)
 Este repositório contém implementações de exercícios e um artigo, todos desenvolvidos utilizando as bibliotecas Gurobipy, Pyomo, Highspy e GLPK. As soluções oferecem abordagens otimizadas para desafios relacionados à roteirização de embarcações, alocação de combustíveis em navios e roteirização de drones para vigilância de áreas de interesse.
 
 ## Questões e Artigo
