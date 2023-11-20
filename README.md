@@ -7,18 +7,24 @@ Este repositório contém implementações de 4 problemas de otimização, todos
 1. **Problema de Roterização de Embarcações com Múltiplas Capacidades e Minimização de Custos**
    - Solução para a roteirização de embarcações considerando múltiplas capacidades e minimização de custos de treinamento e transporte.
 
+![Alt text](images/Questão_1.png)
+
 2. **Problema de Roteirização de Embarcações com Múltiplas Capacidades e Programação de Embarques**
    - Abordagem para o problema de roteirização de embarcações com múltiplas capacidades e programação eficiente de embarques.
 
+![Alt text](images/Questão_2.png)
+
 3. **Problema de Alocação de Combustíveis em Navios com Múltiplas Capacidades em Terminais Portuários**
    - Solução otimizada para a alocação de combustíveis de diversos tipos em navios, considerando múltiplas capacidades em terminais portuários.
+   
+![Alt text](images/Questão_3.png)
 
 4. **Artigo: "Drones Aerial Monitoring Problem"**
    - Baseado no artigo "Drones Aerial Monitoring Problem" (DOI: [10.1016/j.cor.2019.01.001](https://doi.org/10.1016/j.cor.2019.01.001)), este problema foca na roteirização de drones para vigilância de áreas estratégicas.
 
 ## Funções Úteis
 
-Além das implementações específicas, este repositório também disponibiliza algumas funções úteis que podem ser utilizadas em conjunto com a biblioteca Gurobipy, Highspy e Pyomo.
+Além das implementações específicas, este repositório também disponibiliza algumas funções úteis que podem ser utilizadas em conjunto com as bibliotecas Gurobipy, Highspy e Pyomo.
 
 - Imprimir e salvar resultados de um modelo criado na biblioteca Gurobipy
 - Otimizar um modelo criado no pyomo pelo solver Highs podendo acompanhar a execução do processo de otimização, assim como a otimização de hiperparâmetros do otimizador.
